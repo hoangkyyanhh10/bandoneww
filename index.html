@@ -1,0 +1,1004 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quản lý tuyến trạm BTS</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+<style>
+:root {
+    --header-height: 54px;
+    --blue: #17365d;
+    --accent: #1674d1;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+}
+
+/* HEADER */
+
+header {
+    height: var(--header-height);
+    min-height: var(--header-height);
+    background: var(--blue);
+    color: white;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 18px;
+    font-weight: bold;
+    z-index: 1000;
+}
+
+#mobileToggle {
+    display: none;
+    border: 1px solid #ffffff80;
+    background: #ffffff18;
+    color: white;
+    border-radius: 7px;
+    padding: 8px 11px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+/* LAYOUT */
+
+.container {
+    position: relative;
+    display: grid;
+    grid-template-columns: 310px minmax(0, 1fr);
+    gap: 10px;
+    flex: 1;
+    min-height: 0;
+    padding: 10px;
+    overflow: hidden;
+}
+
+/* PANEL NHẬP LIỆU */
+
+
+.panel {
+    min-width: 0;
+    min-height: 0;
+    background: white;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px #0002;
+    overflow: hidden;
+    overscroll-behavior: contain;
+    z-index: 500;
+}
+
+.panel h3 {
+    margin: 0 0 7px;
+    font-size: 16px;
+}
+
+.panel label {
+    margin: 6px 0 3px;
+    font-size: 11px;
+}
+
+.panel input {
+    height: 32px;
+    padding: 5px 8px;
+    font-size: 14px;
+}
+
+.panel button.action {
+    min-height: 36px;
+    margin-top: 7px;
+    font-size: 12px;
+}
+
+.panel #result {
+    margin-top: 8px;
+    padding: 7px;
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.panel .distance {
+    font-size: 16px;
+}
+
+@media (max-width: 700px) {
+    .panel {
+        max-height: calc(100% - 20px);
+        padding: 9px;
+        overflow: hidden;
+    }
+
+    .panel input {
+        height: 34px;
+    }
+
+    .panel button.action {
+        min-height: 38px;
+    }
+}
+
+
+h3 {
+    margin: 0 0 12px;
+    font-size: 17px;
+}
+
+label {
+    display: block;
+    font-weight: bold;
+    margin: 10px 0 5px;
+    font-size: 12px;
+}
+
+input {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    height: 38px;
+    padding: 8px 10px;
+    border: 1px solid #c9ced6;
+    border-radius: 6px;
+    font-size: 16px;
+    background: white;
+}
+
+/* BUTTON */
+
+button.action {
+    width: 100%;
+    min-height: 42px;
+    margin-top: 12px;
+    border: 0;
+    border-radius: 6px;
+    background: var(--accent);
+    color: white;
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+button.secondary {
+    background: #687384;
+}
+
+button.pdf-button {
+    background: #c62828;
+}
+
+button:disabled {
+    opacity: .65;
+    cursor: wait;
+}
+
+/* MAP */
+
+#map {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    border-radius: 8px;
+    background: #e5e7eb;
+}
+
+/* KẾT QUẢ */
+
+#result {
+    margin-top: 12px;
+    padding: 10px;
+    background: #eef5ff;
+    border-radius: 6px;
+    font-size: 13px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+
+.distance {
+    color: #c62828;
+    font-size: 19px;
+    font-weight: bold;
+}
+
+/* ĐIỆN THOẠI */
+
+@media (max-width: 700px) {
+
+    :root {
+        --header-height: 48px;
+    }
+
+    header {
+        padding: 0 10px;
+        font-size: 15px;
+    }
+
+    #mobileToggle {
+        display: inline-block;
+    }
+
+    .container {
+        display: block;
+        padding: 0;
+    }
+
+    #map {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 0;
+    }
+
+    .panel {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        width: min(330px, calc(100% - 20px));
+        max-height: min(58vh, 520px);
+        padding: 12px;
+        border-radius: 10px;
+        box-shadow: 0 3px 16px #0004;
+        transition: transform .2s ease, opacity .2s ease;
+    }
+
+    .panel.collapsed {
+        transform: translateY(calc(-100% - 20px));
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    h3 {
+        font-size: 15px;
+        margin-bottom: 8px;
+    }
+
+    label {
+        margin-top: 8px;
+    }
+
+    input {
+        height: 40px;
+    }
+
+    button.action {
+        min-height: 44px;
+        margin-top: 9px;
+    }
+
+    #result {
+        margin-top: 9px;
+    }
+
+    .leaflet-top {
+        top: 8px;
+    }
+
+    .leaflet-right {
+        right: 6px;
+    }
+
+    .leaflet-control-zoom a {
+        width: 38px !important;
+        height: 38px !important;
+        line-height: 38px !important;
+    }
+}
+
+@media (max-width: 380px) {
+    header {
+        font-size: 13px;
+    }
+
+    .panel {
+        max-height: 62vh;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<!-- TIÊU ĐỀ -->
+
+<header>
+    <span>QUẢN LÝ TUYẾN TRẠM BTS</span>
+
+    <button id="mobileToggle"
+        type="button"
+        onclick="togglePanel()">
+        ẨN NHẬP LIỆU
+    </button>
+</header>
+
+<!-- GIAO DIỆN CHÍNH -->
+
+<main class="container">
+
+    <!-- BẢNG NHẬP THÔNG TIN -->
+
+    <section class="panel" id="panel">
+
+        <h3>THÔNG TIN TUYẾN</h3>
+
+        <label for="station">Mã trạm</label>
+        <input id="station" value="" autocomplete="off">
+
+        <label for="lat1">Vĩ độ điểm đầu (Latitude)</label>
+        <input id="lat1"
+            type="number"
+            step="any"
+            value=""
+            inputmode="decimal">
+
+        <label for="lng1">Kinh độ điểm đầu (Longitude)</label>
+        <input id="lng1"
+            type="number"
+            step="any"
+            value=""
+            inputmode="decimal">
+
+        <label for="lat2">Vĩ độ điểm cuối (Latitude)</label>
+        <input id="lat2"
+            type="number"
+            step="any"
+            value=""
+            inputmode="decimal">
+
+        <label for="lng2">Kinh độ điểm cuối (Longitude)</label>
+        <input id="lng2"
+            type="number"
+            step="any"
+            value=""
+            inputmode="decimal">
+
+        <button class="action"
+            id="drawButton"
+            type="button"
+            onclick="drawRoute()">
+            HIỂN THỊ TUYẾN ĐƯỜNG
+        </button>
+
+        <button class="action secondary"
+            type="button"
+            onclick="resetForm()">
+            LÀM MỚI
+        </button>
+
+        <button class="action pdf-button"
+            id="pdfButton"
+            type="button"
+            onclick="exportPDF()">
+            XUẤT FILE PDF
+        </button>
+
+        <div id="result" aria-live="polite">
+            Nhập thông tin và nhấn HIỂN THỊ TUYẾN ĐƯỜNG.
+        </div>
+
+    </section>
+
+    <!-- BẢN ĐỒ -->
+
+    <div id="map" aria-label="Bản đồ tuyến đường"></div>
+
+</main>
+
+<!-- THƯ VIỆN -->
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+
+// ===================================
+// 1. KHỞI TẠO BẢN ĐỒ
+// ===================================
+
+const map = L.map('map', {
+    zoomControl: true,
+    preferCanvas: true
+}).setView([21.71875, 104.90981], 14);
+
+// ===================================
+// 2. BẢN ĐỒ VỆ TINH
+// ===================================
+
+const satellite = L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    {
+        maxZoom: 19,
+        crossOrigin: true,
+        attribution: 'Tiles &copy; Esri'
+    }
+);
+
+
+// ===================================
+// 3. BẢN ĐỒ ĐƯỜNG PHỐ
+// ===================================
+
+const street = L.tileLayer(
+    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {
+        maxZoom: 19,
+        crossOrigin: true,
+        attribution: '&copy; OpenStreetMap contributors'
+    }
+);
+
+
+// Mặc định sử dụng vệ tinh
+
+satellite.addTo(map);
+
+
+// Chuyển đổi bản đồ
+
+L.control.layers({
+    'Vệ tinh': satellite,
+    'Đường phố': street
+}).addTo(map);
+
+
+// ===================================
+// 4. KHAI BÁO BIẾN
+// ===================================
+
+let routeLayer = null;
+let markers = [];
+
+
+// ===================================
+// 5. ẨN HIỆN BẢNG NHẬP LIỆU
+// ===================================
+
+function togglePanel() {
+
+    const panel = document.getElementById('panel');
+
+    const button = document.getElementById('mobileToggle');
+
+    const collapsed = panel.classList.toggle('collapsed');
+
+    button.textContent = collapsed
+        ? 'NHẬP THÔNG TIN'
+        : 'ẨN NHẬP LIỆU';
+
+    setTimeout(() => {
+        map.invalidateSize();
+    }, 250);
+}
+
+
+// ===================================
+// 6. TÌM VÀ VẼ TUYẾN ĐƯỜNG
+// ===================================
+
+
+async function drawRoute() {
+    const station = document.getElementById('station').value.trim();
+
+    const lat1 = Number(document.getElementById('lat1').value);
+    const lng1 = Number(document.getElementById('lng1').value);
+    const lat2 = Number(document.getElementById('lat2').value);
+    const lng2 = Number(document.getElementById('lng2').value);
+
+    const result = document.getElementById('result');
+    const button = document.getElementById('drawButton');
+
+    // KIỂM TRA DỮ LIỆU
+    if (
+        !station ||
+        ['lat1', 'lng1', 'lat2', 'lng2'].some(
+            id => document.getElementById(id).value.trim() === ''
+        ) ||
+        ![lat1, lng1, lat2, lng2].every(Number.isFinite) ||
+        Math.abs(lat1) > 90 ||
+        Math.abs(lat2) > 90 ||
+        Math.abs(lng1) > 180 ||
+        Math.abs(lng2) > 180
+    ) {
+        alert('Vui lòng kiểm tra mã trạm và tọa độ hợp lệ.');
+        return;
+    }
+
+    button.disabled = true;
+    button.textContent = 'ĐANG TÌM ĐƯỜNG...';
+    result.textContent = 'Đang tìm tuyến đường...';
+
+    const url =
+        `https://router.project-osrm.org/route/v1/driving/${lng1},${lat1};${lng2},${lat2}?overview=full&geometries=geojson`;
+
+    try {
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            throw new Error('Không kết nối được máy chủ tìm đường.');
+        }
+
+        const data = await response.json();
+
+        if (
+            data.code !== 'Ok' ||
+            !data.routes ||
+            !data.routes.length ||
+            !data.routes[0].geometry
+        ) {
+            throw new Error('Không tìm thấy tuyến đường.');
+        }
+
+        const route = data.routes[0];
+
+        // LẤY TỌA ĐỘ ĐÃ ĐƯỢC OSRM ĐIỀU CHỈNH VỀ ĐƯỜNG
+        const startLocation = data.waypoints?.[0]?.location || [lng1, lat1];
+        const endLocation = data.waypoints?.[1]?.location || [lng2, lat2];
+
+        // XÓA TUYẾN VÀ GHIM CŨ
+        if (routeLayer) {
+            map.removeLayer(routeLayer);
+        }
+
+        markers.forEach(marker => map.removeLayer(marker));
+        markers = [];
+
+        // VẼ TUYẾN BẰNG GEOJSON GỐC CỦA OSRM
+        // Không tự đảo thứ tự kinh độ và vĩ độ
+        routeLayer = L.geoJSON(route.geometry, {
+            style: {
+                color: '#0066ff',
+                weight: 5,
+                opacity: 1,
+                lineCap: 'round',
+                lineJoin: 'round'
+            }
+        }).addTo(map);
+
+        // ĐỔI TỌA ĐỘ OSRM [KINH ĐỘ, VĨ ĐỘ]
+        // SANG LEAFLET [VĨ ĐỘ, KINH ĐỘ]
+        const startLatLng = [
+            startLocation[1],
+            startLocation[0]
+        ];
+
+        const endLatLng = [
+            endLocation[1],
+            endLocation[0]
+        ];
+
+        // GHIM ĐIỂM ĐẦU TẠI VỊ TRÍ OSRM ĐÃ SNAP
+        markers.push(
+            L.marker(startLatLng)
+                .addTo(map)
+                .bindPopup(
+                    'Điểm đầu: ' + escapeHTML(station) +
+                    '<br>Vị trí OSRM: ' +
+                    startLocation[1] + ', ' + startLocation[0]
+                )
+        );
+
+        // GHIM ĐIỂM CUỐI TẠI VỊ TRÍ OSRM ĐÃ SNAP
+        markers.push(
+            L.marker(endLatLng)
+                .addTo(map)
+                .bindPopup(
+                    'Điểm cuối' +
+                    '<br>Vị trí OSRM: ' +
+                    endLocation[1] + ', ' + endLocation[0]
+                )
+        );
+
+        // CĂN BẢN ĐỒ THEO TOÀN BỘ TUYẾN ĐƯỜNG
+        map.fitBounds(routeLayer.getBounds(), {
+            padding: [40, 40],
+            maxZoom: 17
+        });
+
+        const km = (route.distance / 1000).toFixed(2);
+
+        // HIỂN THỊ THÔNG TIN
+        result.innerHTML = `
+            <b>MÃ TRẠM:</b> ${escapeHTML(station)}<br>
+            <b>ĐIỂM ĐẦU:</b><br>
+            ${lat1}, ${lng1}<br>
+            <b>ĐIỂM CUỐI:</b><br>
+            ${lat2}, ${lng2}<br>
+            <b>CỰ LY:</b>
+            <span class="distance">${km} km</span>
+        `;
+
+        // CẬP NHẬT KÍCH THƯỚC BẢN ĐỒ
+        if (window.matchMedia('(max-width: 700px)').matches) {
+            document.getElementById('panel').classList.add('collapsed');
+            document.getElementById('mobileToggle').textContent =
+                'NHẬP THÔNG TIN';
+        }
+
+        setTimeout(() => {
+            map.invalidateSize(true);
+            map.fitBounds(routeLayer.getBounds(), {
+                padding: [40, 40],
+                maxZoom: 17
+            });
+        }, 300);
+
+    } catch (error) {
+        console.error('Lỗi tìm tuyến:', error);
+        result.textContent = 'Lỗi: ' + error.message;
+
+    } finally {
+        button.disabled = false;
+        button.textContent = 'HIỂN THỊ TUYẾN ĐƯỜNG';
+    }
+}
+
+
+
+// ===================================
+// 7. BẢO VỆ NỘI DUNG HIỂN THỊ
+// ===================================
+
+function escapeHTML(value) {
+
+    return String(value).replace(/[&<>"']/g, char => ({
+
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+
+    })[char]);
+
+}
+
+
+// ===================================
+// 8. LÀM MỚI DỮ LIỆU
+// ===================================
+
+function resetForm() {
+
+    [
+        'station',
+        'lat1',
+        'lng1',
+        'lat2',
+        'lng2'
+    ].forEach(id => {
+
+        document.getElementById(id).value = '';
+
+    });
+
+
+    if (routeLayer) {
+        map.removeLayer(routeLayer);
+    }
+
+    markers.forEach(marker => {
+        map.removeLayer(marker);
+    });
+
+    routeLayer = null;
+
+    markers = [];
+
+
+    document.getElementById('result').textContent =
+        'Nhập thông tin và nhấn HIỂN THỊ TUYẾN ĐƯỜNG.';
+
+
+    map.setView([21.71875, 104.90981], 14);
+
+}
+
+
+// ===================================
+// 9. TỰ ĐỘNG ĐIỀU CHỈNH KÍCH THƯỚC
+// ===================================
+
+window.addEventListener('resize', () => {
+
+    setTimeout(() => {
+        map.invalidateSize();
+    }, 100);
+
+});
+
+
+setTimeout(() => {
+    map.invalidateSize();
+}, 250);
+
+
+
+
+
+
+
+// ===================================
+// 10. XUẤT FILE PDF
+// ===================================
+
+async function exportPDF() {
+    const mapElement = document.getElementById("map");
+    const resultElement = document.getElementById("result");
+    const stationInput = document.getElementById("station");
+    const exportButton = document.getElementById("pdfButton");
+
+    const station = stationInput.value.trim();
+
+    if (!station) {
+        alert("Vui lòng nhập mã trạm!");
+        return;
+    }
+
+    if (!routeLayer) {
+        alert("Vui lòng hiển thị tuyến đường trước khi xuất PDF!");
+        return;
+    }
+
+    if (typeof html2canvas === "undefined") {
+        alert("Thư viện html2canvas chưa được tải!");
+        return;
+    }
+
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+        alert("Thư viện jsPDF chưa được tải!");
+        return;
+    }
+
+    const originalText = exportButton.textContent;
+
+    try {
+        exportButton.disabled = true;
+        exportButton.textContent = "ĐANG CHỤP BẢN ĐỒ...";
+
+        // Cập nhật kích thước bản đồ
+        map.invalidateSize(true);
+
+        await new Promise(resolve => {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(resolve);
+            });
+        });
+
+        // Kiểm tra bản đồ
+        const rect = mapElement.getBoundingClientRect();
+
+        if (rect.width <= 0 || rect.height <= 0) {
+            throw new Error("Kích thước bản đồ không hợp lệ!");
+        }
+
+        // Chờ các ô bản đồ tải thêm
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Chụp bản đồ
+        const canvas = await html2canvas(mapElement, {
+            scale: 2,
+            useCORS: true,
+            allowTaint: false,
+            backgroundColor: "#ffffff",
+            logging: true,
+            imageTimeout: 20000,
+            width: Math.round(rect.width),
+            height: Math.round(rect.height),
+            scrollX: 0,
+            scrollY: 0
+        });
+
+        if (!canvas.width || !canvas.height) {
+            throw new Error("Không tạo được ảnh bản đồ!");
+        }
+
+        const mapImage = canvas.toDataURL("image/jpeg", 0.95);
+
+        exportButton.textContent = "ĐANG TẠO PDF...";
+
+        // Khởi tạo PDF A4 ngang
+        const { jsPDF } = window.jspdf;
+
+        const pdf = new jsPDF({
+            orientation: "landscape",
+            unit: "mm",
+            format: "a4"
+        });
+
+        const pageWidth = 297;
+        const pageHeight = 210;
+        const margin = 8;
+
+        // Tiêu đề
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(18);
+        pdf.setTextColor(23, 54, 93);
+
+        pdf.text(
+            "BAO CAO TUYEN DUONG BTS",
+            pageWidth / 2,
+            16,
+            { align: "center" }
+        );
+
+        // Đường phân cách
+        pdf.setDrawColor(180, 180, 180);
+        pdf.line(margin, 21, pageWidth - margin, 21);
+
+        // Khu vực thông tin bên trái
+        const infoX = margin;
+        const infoY = 28;
+        const infoWidth = 72;
+
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(12);
+        pdf.setTextColor(23, 54, 93);
+
+        pdf.text("THONG TIN TUYEN", infoX, infoY);
+
+        // Lấy thông tin từ các trường nhập liệu
+        const lat1 = document.getElementById("lat1").value;
+        const lng1 = document.getElementById("lng1").value;
+        const lat2 = document.getElementById("lat2").value;
+        const lng2 = document.getElementById("lng2").value;
+
+        const resultText = resultElement.innerText
+            .replace(/\s+/g, " ")
+            .trim();
+
+        const distanceMatch = resultText.match(
+            /CỰ LY:\s*([\d.,]+\s*km)/i
+        );
+
+        const distance = distanceMatch
+            ? distanceMatch[1]
+            : "Chua co thong tin";
+
+        const infoLines = [
+            "Ma tram: " + station,
+            "Diem dau:",
+            lat1 + ", " + lng1,
+            "",
+            "Diem cuoi:",
+            lat2 + ", " + lng2,
+            "",
+            "Cu ly: " + distance
+        ];
+
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(11);
+        pdf.setTextColor(40, 40, 40);
+
+        let textY = infoY + 12;
+
+        infoLines.forEach(line => {
+            if (line) {
+                const wrapped = pdf.splitTextToSize(
+                    line,
+                    infoWidth - 6
+                );
+
+                pdf.text(wrapped, infoX + 2, textY);
+
+                textY += wrapped.length * 6;
+            } else {
+                textY += 3;
+            }
+        });
+
+        // Khung thông tin
+        pdf.setDrawColor(190, 190, 190);
+
+        pdf.roundedRect(
+            infoX,
+            infoY - 5,
+            infoWidth,
+            165,
+            2,
+            2
+        );
+
+        // Khung bản đồ bên phải
+        const mapX = 85;
+        const mapY = 28;
+        const mapWidth = 204;
+        const mapHeight = 165;
+
+        pdf.setDrawColor(190, 190, 190);
+
+        pdf.roundedRect(
+            mapX,
+            mapY - 5,
+            mapWidth,
+            mapHeight + 10,
+            2,
+            2
+        );
+
+        // Giữ nguyên tỷ lệ ảnh bản đồ
+        const imageRatio = canvas.width / canvas.height;
+        const frameRatio = mapWidth / mapHeight;
+
+        let imageWidth;
+        let imageHeight;
+
+        if (imageRatio > frameRatio) {
+            imageWidth = mapWidth - 4;
+            imageHeight = imageWidth / imageRatio;
+        } else {
+            imageHeight = mapHeight - 4;
+            imageWidth = imageHeight * imageRatio;
+        }
+
+        const imageX = mapX + (mapWidth - imageWidth) / 2;
+        const imageY = mapY + (mapHeight - imageHeight) / 2;
+
+        // Chèn ảnh bản đồ vào PDF
+        pdf.addImage(
+            mapImage,
+            "JPEG",
+            imageX,
+            imageY,
+            imageWidth,
+            imageHeight
+        );
+
+        // Chân trang
+        pdf.setFontSize(8);
+        pdf.setTextColor(120, 120, 120);
+
+        pdf.text(
+            "BAN DO TUYEN TRAM BTS",
+            pageWidth / 2,
+            204,
+            { align: "center" }
+        );
+
+        // Lưu PDF
+        const safeStation = station.replace(/[\\/:*?"<>|]/g, "_");
+
+        pdf.save("ban_do_tuyen_" + safeStation + ".pdf");
+
+        alert("Xuất PDF thành công!");
+
+    } catch (error) {
+        console.error("Lỗi xuất PDF:", error);
+
+        alert("Xuất PDF thất bại: " + error.message);
+
+    } finally {
+        exportButton.disabled = false;
+        exportButton.textContent = originalText;
+    }
+}
+
+
+
+</script>
+
+</body>
+</html>
