@@ -363,14 +363,14 @@ button:disabled {
         <input id="lat2"
             type="number"
             step="any"
-            value=""
+            value="21.6944253755925"
             inputmode="decimal">
 
         <label for="lng2">Kinh độ điểm cuối (Longitude)</label>
         <input id="lng2"
             type="number"
             step="any"
-            value=""
+            value="104.8989334"
             inputmode="decimal">
 
         <button class="action"
@@ -683,18 +683,16 @@ function escapeHTML(value) {
 
 function resetForm() {
 
+    // Chỉ xóa mã trạm và tọa độ điểm đầu
     [
         'station',
         'lat1',
-        'lng1',
-        'lat2',
-        'lng2'
+        'lng1'
     ].forEach(id => {
-
         document.getElementById(id).value = '';
-
     });
 
+    // Giữ nguyên tọa độ điểm cuối
 
     if (routeLayer) {
         map.removeLayer(routeLayer);
@@ -705,16 +703,12 @@ function resetForm() {
     });
 
     routeLayer = null;
-
     markers = [];
-
 
     document.getElementById('result').textContent =
         'Nhập thông tin và nhấn HIỂN THỊ TUYẾN ĐƯỜNG.';
 
-
     map.setView([21.71875, 104.90981], 14);
-
 }
 
 
